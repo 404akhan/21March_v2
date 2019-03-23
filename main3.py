@@ -19,7 +19,7 @@ torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
 TEXT = data.Field(tokenize='spacy', preprocessing=generate_bigrams)
-LABEL = data.LabelField(dtype=torch.float)
+LABEL = data.LabelField()
 
 
 
@@ -176,7 +176,7 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 
-N_EPOCHS = 10
+N_EPOCHS = 0
 
 best_valid_loss = float('inf')
 
@@ -196,15 +196,15 @@ for epoch in range(N_EPOCHS):
         torch.save(model.state_dict(), 'tut3-model.pt')
     
     print('Epoch: %d | Epoch Time: %dm %ds' % (epoch+1, epoch_mins, epoch_secs))
-    print('\tTrain Loss: %.3f | Train Acc: %.2f%' % (train_loss, train_acc*100))
-    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%' % (valid_loss, valid_acc*100))
+    print('\tTrain Loss: %.3f | Train Acc: %.2f%%' % (train_loss, train_acc*100))
+    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%%' % (valid_loss, valid_acc*100))
 
 
-model.load_state_dict(torch.load('tut1-model.pt'))
+model.load_state_dict(torch.load('tut3-model.pt'))
 
 test_loss, test_acc = evaluate(model, test_iterator, criterion)
 
-print('Test Loss: %.3f | Test Acc: %.2f%' % (test_loss, test_acc*100))
+print('Test Loss: %.3f | Test Acc: %.2f%%' % (test_loss, test_acc*100))
 
 
 

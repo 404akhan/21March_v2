@@ -294,15 +294,15 @@ for epoch in range(N_EPOCHS):
         torch.save(model.state_dict(), 'tut4-model.pt')
     
     print('Epoch: %d | Epoch Time: %dm %ds' % (epoch+1, epoch_mins, epoch_secs))
-    print('\tTrain Loss: %.3f | Train Acc: %.2f%' % (train_loss, train_acc*100))
-    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%' % (valid_loss, valid_acc*100))
+    print('\tTrain Loss: %.3f | Train Acc: %.2f%%' % (train_loss, train_acc*100))
+    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%%' % (valid_loss, valid_acc*100))
 
 
-model.load_state_dict(torch.load('tut1-model.pt'))
+model.load_state_dict(torch.load('tut4-model.pt'))
 
 test_loss, test_acc = evaluate(model, test_iterator, criterion)
 
-print('Test Loss: %.3f | Test Acc: %.2f%' % (test_loss, test_acc*100))
+print('Test Loss: %.3f | Test Acc: %.2f%%' % (test_loss, test_acc*100))
 
 
 import spacy
