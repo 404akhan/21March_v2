@@ -10,6 +10,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 import spacy
+from sklearn.metrics import f1_score
+import numpy as np 
 
 
 class CNN(nn.Module):
