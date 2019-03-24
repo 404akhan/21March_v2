@@ -160,8 +160,10 @@ def predict_sentiment(sentence, min_len=5):
     indexed = [TEXT.vocab.stoi[t] for t in tokenized]
     tensor = torch.LongTensor(indexed).to(device)
     tensor = tensor.unsqueeze(1)
-    prediction = torch.sigmoid(model(tensor))
-    return prediction.item()
+    preds = model(tensor)
+    max_preds = preds.argmax(dim=1)
+    sentiment = LABEL.vocab.itos[max_preds.item()]
+    return sentence, sentiment
 
 
 SEED = 1234
@@ -187,7 +189,7 @@ train_data, _ = data.TabularDataset.splits(
 train_data, test_data = train_data.split(random_state=random.seed(SEED))
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-TEXT.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.100d", unk_init=torch.Tensor.normal_)
+TEXT.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.200d", unk_init=torch.Tensor.normal_)
 LABEL.build_vocab(train_data)
 
 BATCH_SIZE = 64
@@ -200,8 +202,8 @@ train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
     device=device)
 
 INPUT_DIM = len(TEXT.vocab)
-EMBEDDING_DIM = 100
-N_FILTERS = 100
+EMBEDDING_DIM = 200
+N_FILTERS = 200
 FILTER_SIZES = [3,4,5]
 OUTPUT_DIM = 3
 DROPOUT = 0.5
