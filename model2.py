@@ -172,7 +172,7 @@ train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
 
 INPUT_DIM = len(TEXT.vocab)
 EMBEDDING_DIM = 100
-HIDDEN_DIM = 128 # !!! change -> 256
+HIDDEN_DIM = 256 # !!! change -> 256
 OUTPUT_DIM = 3 # !!! change -> 3
 N_LAYERS = 2 # !!! change -> 2
 BIDIRECTIONAL = True
