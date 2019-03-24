@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 import spacy
+from sklearn.metrics import f1_score
+import numpy as np 
 
 
 class RNN(nn.Module):
@@ -58,6 +60,14 @@ def categorical_accuracy(preds, y):
     return correct.sum()/torch.FloatTensor([y.shape[0]])
 
 
+def f1_scores(preds, y):
+    f1_macro = f1_score(preds, y, average='macro')
+
+    f1_weighted = f1_score(preds, y, average='weighted')
+
+    return f1_macro, f1_weighted
+
+
 def train(model, iterator, optimizer, criterion):
     
     epoch_loss = 0
@@ -89,7 +99,9 @@ def evaluate(model, iterator, criterion):
     
     epoch_loss = 0
     epoch_acc = 0
-    
+    predictions_arr = []
+    labels_arr = []
+
     model.eval()
     
     with torch.no_grad():
@@ -99,13 +111,19 @@ def evaluate(model, iterator, criterion):
             predictions = model(batch.text).squeeze(1)
             
             loss = criterion(predictions, batch.label)
+
+            # f1_score code
+            predictions_arr += list(predictions.argmax(dim=1))
+            labels_arr += list(batch.label)
+            # f1_score end
             
             acc = categorical_accuracy(predictions, batch.label)
 
             epoch_loss += loss.item()
             epoch_acc += acc.item()
-        
-    return epoch_loss / len(iterator), epoch_acc / len(iterator)
+
+    f1_macro, f1_weighted = f1_scores(predictions_arr, labels_arr) 
+    return epoch_loss / len(iterator), epoch_acc / len(iterator), f1_macro, f1_weighted
 
 
 
@@ -214,7 +232,7 @@ for epoch in range(N_EPOCHS):
     start_time = time.time()
     
     train_loss, train_acc = train(model, train_iterator, optimizer, criterion)
-    valid_loss, valid_acc = evaluate(model, valid_iterator, criterion)
+    valid_loss, valid_acc, f1_macro, f1_weighted = evaluate(model, valid_iterator, criterion)
     
     end_time = time.time()
 
@@ -226,13 +244,13 @@ for epoch in range(N_EPOCHS):
     
     print('Epoch: %d | Epoch Time: %dm %ds' % (epoch+1, epoch_mins, epoch_secs))
     print('\tTrain Loss: %.3f | Train Acc: %.2f%%' % (train_loss, train_acc*100))
-    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%%' % (valid_loss, valid_acc*100))
+    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % (valid_loss, valid_acc*100, f1_macro, f1_weighted))
 
 
 model.load_state_dict(torch.load('model2-model.pt'))
-test_loss, test_acc = evaluate(model, test_iterator, criterion)
+test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_iterator, criterion)
 
-print('Test Loss: %.3f | Test Acc: %.2f%%' % (test_loss, test_acc*100))
+print('Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % (test_loss, test_acc*100, f1_macro, f1_weighted))
 
 print(predict_sentiment("This film is terrible"))
 print(predict_sentiment("This film is great"))
