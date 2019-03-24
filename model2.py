@@ -113,8 +113,8 @@ def evaluate(model, iterator, criterion):
             loss = criterion(predictions, batch.label)
 
             # f1_score code
-            predictions_arr += list(predictions.argmax(dim=1))
-            labels_arr += list(batch.label)
+            predictions_arr += predictions.argmax(dim=1).tolist()
+            labels_arr += batch.label.tolist()
             # f1_score end
             
             acc = categorical_accuracy(predictions, batch.label)
