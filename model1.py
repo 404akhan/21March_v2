@@ -147,18 +147,21 @@ torch.backends.cudnn.deterministic = True
 POST = data.Field(preprocessing=generate_bigrams)
 LABEL = data.LabelField()
 
-fields = {'post': ('text', POST), 'label': ('label', LABEL)}
+fields = {'post': ('text', POST), 'sentiment': ('label', LABEL)}
+train_path = '../dataset_sentiment_not_target_semeval/dataset_sentiment_not_target/merged_dataset.json'
+test_fake_path = 'fake.json'
+
 train_data, _ = data.TabularDataset.splits(
                             path = 'my_data_v2',
-                            train = 'small_data.json',
-                            test = 'fake.json',
+                            train = train_path,
+                            test = test_fake_path,
                             format = 'json',
                             fields = fields
 )
 train_data, test_data = train_data.split(random_state=random.seed(SEED))
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-POST.build_vocab(train_data, max_size=25000, vectors="glove.6B.100d", unk_init=torch.Tensor.normal_)
+POST.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.100d", unk_init=torch.Tensor.normal_)
 LABEL.build_vocab(train_data)
 
 BATCH_SIZE = 64
@@ -172,7 +175,7 @@ train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
 
 INPUT_DIM = len(POST.vocab)
 EMBEDDING_DIM = 100
-OUTPUT_DIM = 2
+OUTPUT_DIM = 3
 
 model = FastText(INPUT_DIM, EMBEDDING_DIM, OUTPUT_DIM, POST.vocab.stoi['<pad>'])
 print('The model has %d trainable parameters' % count_parameters(model))

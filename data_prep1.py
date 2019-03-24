@@ -40,7 +40,7 @@ def load_and_save(fname, fname_out):
 			target = content[i+1]
 			label = get_label(content[i+2])
 
-			post = post.replace("$T$", "$obj$ " + target + " $obj$")
+			post = post.replace("$T$", "my_target_wrapper " + target + " my_target_wrapper")
 			tokenized = [filter(tok.text) for tok in nlp.tokenizer(post)]
 
 			data = {'post': tokenized, 'label': label}

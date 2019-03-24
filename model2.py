@@ -145,18 +145,21 @@ torch.backends.cudnn.deterministic = True
 TEXT = data.Field()
 LABEL = data.LabelField()
 
-fields = {'post': ('text', TEXT), 'label': ('label', LABEL)}
+fields = {'post': ('text', TEXT), 'sentiment': ('label', LABEL)}
+train_path = '../dataset_sentiment_not_target_semeval/dataset_sentiment_not_target/merged_dataset.json'
+test_fake_path = 'fake.json'
+
 train_data, _ = data.TabularDataset.splits(
                             path = 'my_data_v2',
-                            train = 'small_data.json',
-                            test = 'fake.json',
+                            train = train_path,
+                            test = test_fake_path,
                             format = 'json',
                             fields = fields
 )
 train_data, test_data = train_data.split(random_state=random.seed(SEED))
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-TEXT.build_vocab(train_data, max_size=25000, vectors="glove.6B.100d", unk_init=torch.Tensor.normal_)
+TEXT.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.100d", unk_init=torch.Tensor.normal_)
 LABEL.build_vocab(train_data)
 
 BATCH_SIZE = 64
@@ -170,8 +173,8 @@ train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
 INPUT_DIM = len(TEXT.vocab)
 EMBEDDING_DIM = 100
 HIDDEN_DIM = 128 # !!! change -> 256
-OUTPUT_DIM = 2 # !!! change -> 3
-N_LAYERS = 1 # !!! change -> 2
+OUTPUT_DIM = 3 # !!! change -> 3
+N_LAYERS = 2 # !!! change -> 2
 BIDIRECTIONAL = True
 DROPOUT = 0.5
 
