@@ -114,9 +114,17 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 
+def filter(token):
+	if token[0] == '@':
+		return '<at_@>'
+	if token[:4] == 'http':
+		return '<http>'
+	return token.lower()
+
+
 def predict_sentiment(sentence, min_len=4):
     nlp = spacy.load('en')
-    tokenized = generate_bigrams([tok.text.lower() for tok in nlp.tokenizer(sentence)])
+    tokenized = generate_bigrams([filter(tok.text) for tok in nlp.tokenizer(sentence)])
     if len(tokenized) < min_len:
         tokenized += ['<pad>'] * (min_len - len(tokenized))
     indexed = [POST.vocab.stoi[t] for t in tokenized]

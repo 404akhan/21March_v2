@@ -116,16 +116,24 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 
+def filter(token):
+    if token[0] == '@':
+        return '<at_@>'
+    if token[:4] == 'http':
+        return '<http>'
+    return token.lower()
+
+
 def predict_sentiment(sentence):
     nlp = spacy.load('en')
-    tokenized = [tok.text for tok in nlp.tokenizer(sentence)]
+    tokenized = [filter(tok.text) for tok in nlp.tokenizer(sentence)]
     indexed = [TEXT.vocab.stoi[t] for t in tokenized]
     tensor = torch.LongTensor(indexed).to(device)
     tensor = tensor.unsqueeze(1)
     preds = model(tensor)
     max_preds = preds.argmax(dim=1)
     sentiment = LABEL.vocab.itos[max_preds.item()]
-    return sentiment
+    return sentence, sentiment
 
 
 SEED = 1234
