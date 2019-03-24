@@ -1,4 +1,4 @@
-# fasttext
+# fasttext clean implementation for dataset 1.6M tweets, two label
 
 import torch
 from torchtext import data
@@ -20,10 +20,10 @@ def generate_bigrams(x):
 
 
 class FastText(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, output_dim):
+    def __init__(self, vocab_size, embedding_dim, output_dim, padding_idx):
         super().__init__()
         
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=padding_idx)
         self.fc = nn.Linear(embedding_dim, output_dim)
         
     def forward(self, text):
@@ -115,7 +115,7 @@ def epoch_time(start_time, end_time):
 
 
 def predict_sentiment(sentence, min_len=4):
-	nlp = spacy.load('en')
+    nlp = spacy.load('en')
     tokenized = generate_bigrams([tok.text.lower() for tok in nlp.tokenizer(sentence)])
     if len(tokenized) < min_len:
         tokenized += ['<pad>'] * (min_len - len(tokenized))
@@ -140,7 +140,6 @@ POST = data.Field(preprocessing=generate_bigrams)
 LABEL = data.LabelField()
 
 fields = {'post': ('text', POST), 'label': ('label', LABEL)}
-
 train_data, _ = data.TabularDataset.splits(
                             path = 'my_data_v2',
                             train = 'small_data.json',
@@ -148,7 +147,6 @@ train_data, _ = data.TabularDataset.splits(
                             format = 'json',
                             fields = fields
 )
-
 train_data, test_data = train_data.split(random_state=random.seed(SEED))
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
@@ -168,11 +166,13 @@ INPUT_DIM = len(POST.vocab)
 EMBEDDING_DIM = 100
 OUTPUT_DIM = 2
 
-model = FastText(INPUT_DIM, EMBEDDING_DIM, OUTPUT_DIM)
+model = FastText(INPUT_DIM, EMBEDDING_DIM, OUTPUT_DIM, POST.vocab.stoi['<pad>'])
 print('The model has %d trainable parameters' % count_parameters(model))
 
 pretrained_embeddings = POST.vocab.vectors
 model.embedding.weight.data.copy_(pretrained_embeddings)
+model.embedding.weight.data[POST.vocab.stoi['<unk>']] = torch.zeros(EMBEDDING_DIM)
+model.embedding.weight.data[POST.vocab.stoi['<pad>']] = torch.zeros(EMBEDDING_DIM)
 
 optimizer = optim.Adam(model.parameters())
 criterion = nn.CrossEntropyLoss()
