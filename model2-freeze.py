@@ -197,7 +197,6 @@ BIDIRECTIONAL = True
 DROPOUT = 0.5
 
 model = RNN(INPUT_DIM, EMBEDDING_DIM, HIDDEN_DIM, OUTPUT_DIM, N_LAYERS, BIDIRECTIONAL, DROPOUT, TEXT.vocab.stoi['<pad>'])
-print('The model has %d trainable parameters' % count_parameters(model))
 
 pretrained_embeddings = TEXT.vocab.vectors
 print(pretrained_embeddings.shape)
@@ -206,13 +205,15 @@ model.embedding.weight.data[TEXT.vocab.stoi['<unk>']] = torch.zeros(EMBEDDING_DI
 model.embedding.weight.data[TEXT.vocab.stoi['<pad>']] = torch.zeros(EMBEDDING_DIM)
 model.embedding.weight.requires_grad = False
 
+print('The model has %d trainable parameters' % count_parameters(model))
+
 optimizer = optim.Adam([param for param in model.parameters() if param.requires_grad == True])
 criterion = nn.CrossEntropyLoss()
 
 model = model.to(device)
 criterion = criterion.to(device)
 
-N_EPOCHS = 10
+N_EPOCHS = 20
 best_valid_loss = float('inf')
 
 print('start')
