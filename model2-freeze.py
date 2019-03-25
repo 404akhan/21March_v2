@@ -149,9 +149,9 @@ def predict_sentiment(sentence):
     tensor = torch.LongTensor(indexed).to(device)
     tensor = tensor.unsqueeze(1)
     preds = model(tensor)
-    max_preds = preds.argmax(dim=1)
+    max_preds = preds.argmax(dim=1) 
     sentiment = LABEL.vocab.itos[max_preds.item()]
-    return sentence, sentiment
+    return sentence, sentiment, preds
 
 
 SEED = 1234
@@ -177,7 +177,7 @@ train_data, _ = data.TabularDataset.splits(
 train_data, test_data = train_data.split(random_state=random.seed(SEED))
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-TEXT.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.200d", unk_init=torch.Tensor.normal_)
+TEXT.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.100d", unk_init=torch.Tensor.normal_)
 LABEL.build_vocab(train_data)
 
 BATCH_SIZE = 64
@@ -189,7 +189,7 @@ train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
     device=device)
 
 INPUT_DIM = len(TEXT.vocab)
-EMBEDDING_DIM = 200
+EMBEDDING_DIM = 100
 HIDDEN_DIM = 256 # !!! change -> 256
 OUTPUT_DIM = 3 # !!! change -> 3
 N_LAYERS = 2 # !!! change -> 2
@@ -245,6 +245,7 @@ for epoch in range(N_EPOCHS):
         torch.save(model.state_dict(), 'model2-model.pt')
 
     if epoch == N_EPOCHS / 2:
+        print('Unfreeze embeddings')
         model.embedding.weight.requires_grad = True
         optimizer = optim.Adam(model.parameters())
 
