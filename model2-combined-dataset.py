@@ -279,3 +279,8 @@ print('TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1
 
 print(predict_sentiment("This film is terrible"))
 print(predict_sentiment("This film is great"))
+print(predict_sentiment("my_target_wrapper Obama my_target_wrapper is great, but Trump is awful"))
+print(predict_sentiment("my_target_wrapper Obama my_target_wrapper is good, but Trump is bad"))
+
+print(predict_sentiment("Obama is great, but my_target_wrapper Trump my_target_wrapper is awful"))
+print(predict_sentiment("Obama is good, but my_target_wrapper Trump my_target_wrapper is bad"))
