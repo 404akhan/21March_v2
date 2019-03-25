@@ -188,7 +188,7 @@ _, test_target_data = data.TabularDataset.splits(
 
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-TEXT.build_vocab(train_data, max_size=25000, vectors="glove.6B.300d.txt", unk_init=torch.Tensor.normal_)
+TEXT.build_vocab(train_data, max_size=25000, vectors="glove.6B.300d", unk_init=torch.Tensor.normal_)
 LABEL.build_vocab(train_data)
 
 BATCH_SIZE = 64
