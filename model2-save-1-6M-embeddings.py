@@ -281,6 +281,7 @@ fname_out = '.vector_cache/1-6M-my-train-embedding-200d.txt'
 # print(len(model.embedding.weight.data))
 
 with open(fname_out, 'w') as outfile:  
+    whole_str = ''
 
     for i in range(len(TEXT.vocab.itos)):
         token = TEXT.vocab.itos[i]
@@ -291,8 +292,9 @@ with open(fname_out, 'w') as outfile:
             str_weights +=  ('%.5f ' % w.item())
         str_weights += '\n'
 
+        whole_str += str_weights
 
-        outfile.write(str_weights)
+    outfile.write(whole_str)
 
 
 # 25000 change to no-limit
