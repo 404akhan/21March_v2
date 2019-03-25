@@ -188,7 +188,7 @@ _, test_target_data = data.TabularDataset.splits(
 
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-TEXT.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.100d", unk_init=torch.Tensor.normal_)
+TEXT.build_vocab(train_data, max_size=25000, vectors="glove.twitter.27B.200d", unk_init=torch.Tensor.normal_)
 LABEL.build_vocab(train_data)
 
 BATCH_SIZE = 64
@@ -200,10 +200,10 @@ train_iterator, valid_iterator, test_non_target_iterator, test_target_iterator =
     device=device)
 
 INPUT_DIM = len(TEXT.vocab)
-EMBEDDING_DIM = 100
-HIDDEN_DIM = 256 # !!! change -> 256
+EMBEDDING_DIM = 200
+HIDDEN_DIM = 300 # !!! change -> 256
 OUTPUT_DIM = 3 # !!! change -> 3
-N_LAYERS = 2 # !!! change -> 2
+N_LAYERS = 1 # !!! change -> 2
 BIDIRECTIONAL = True
 DROPOUT = 0.5
 
@@ -218,7 +218,7 @@ model.embedding.weight.requires_grad = False
 
 print('The model has %d trainable parameters' % count_parameters(model))
 
-optimizer = optim.Adam([param for param in model.parameters() if param.requires_grad == True])
+optimizer = optim.Adam([param for param in model.parameters() if param.requires_grad == True], weight_decay=1e-5)
 criterion = nn.CrossEntropyLoss()
 
 model = model.to(device)
