@@ -151,7 +151,9 @@ def predict_sentiment(sentence):
     preds = model(tensor)
     max_preds = preds.argmax(dim=1) 
     sentiment = LABEL.vocab.itos[max_preds.item()]
-    return sentence, sentiment, preds
+
+    probs = nn.softmax(preds)[0]
+    return sentence, sentiment, probs
 
 
 SEED = 1234
