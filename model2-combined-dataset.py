@@ -222,6 +222,7 @@ optimizer = optim.Adam([param for param in model.parameters() if param.requires_
 
 weights_int = [item[1] for item in LABEL.vocab.freqs.most_common(20)]
 class_weights = [sum(weights_int) / w for w in weights_int]
+class_weights = torch.FloatTensor(class_weights).to(device)
 criterion = nn.CrossEntropyLoss(weight=class_weights)
 
 model = model.to(device)
