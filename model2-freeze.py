@@ -152,7 +152,7 @@ def predict_sentiment(sentence):
     max_preds = preds.argmax(dim=1) 
     sentiment = LABEL.vocab.itos[max_preds.item()]
 
-    probs = nn.softmax(preds)[0]
+    probs = nn.Softmax(preds)[0]
     return sentence, sentiment, probs
 
 
