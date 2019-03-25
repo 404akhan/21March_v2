@@ -219,7 +219,10 @@ model.embedding.weight.requires_grad = False
 print('The model has %d trainable parameters' % count_parameters(model))
 
 optimizer = optim.Adam([param for param in model.parameters() if param.requires_grad == True], weight_decay=1e-5)
-criterion = nn.CrossEntropyLoss()
+
+weights_int = [item[1] for item in LABEL.vocab.freqs.most_common(20)]
+class_weights = [sum(weights_int) / w for w in weights_int]
+criterion = nn.CrossEntropyLoss(weight=class_weights)
 
 model = model.to(device)
 criterion = criterion.to(device)
@@ -235,7 +238,9 @@ print("Unique tokens in LABEL vocabulary: %d" % len(LABEL.vocab))
 
 print(TEXT.vocab.freqs.most_common(20))
 print(TEXT.vocab.itos[:10])
+print(LABEL.vocab.freqs.most_common(20))
 print(LABEL.vocab.stoi)
+print(class_weights)
 
 print("train_data %d, valid_data %d, test_non_target_data %d, test_target_data %d" % 
     (len(train_data), len(valid_data), len(test_non_target_data), len(test_target_data)))
