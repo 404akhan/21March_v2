@@ -217,6 +217,8 @@ criterion = criterion.to(device)
 N_EPOCHS = 25
 best_valid_loss = float('inf')
 
+model_save_dir = 'model2-save-1-6M-embeddings-model.pt'
+
 print('start')
 print(vars(train_data.examples[0]))
 
@@ -245,7 +247,7 @@ for epoch in range(N_EPOCHS):
     
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
-        torch.save(model.state_dict(), 'model2-save-1-6M-embeddings-model.pt')
+        torch.save(model.state_dict(), model_save_dir)
 
     if epoch == 10:
         print('Unfreeze embeddings')
@@ -257,7 +259,9 @@ for epoch in range(N_EPOCHS):
     print('\tTrain Loss: %.3f | Train Acc: %.2f%%' % (train_loss, train_acc*100))
     print('\t Val. Loss: %.3f |  Val. Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % (valid_loss, valid_acc*100, f1_macro, f1_weighted))
 
-model.load_state_dict(torch.load('model2-save-1-6M-embeddings-model.pt'))
+import os
+if os.path.exists(model_save_dir):
+    model.load_state_dict(torch.load(model_save_dir))
 
 test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_iterator, criterion)
 print('Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
@@ -271,6 +275,7 @@ print(predict_sentiment("This film is great"))
 from tqdm import tqdm
 
 def write_embeddings(path, embeddings, vocab):
+    print('writing embeddings into: %s' % path)
     
     with open(path, 'w') as f:
         for i, embedding in enumerate(tqdm(embeddings)):
@@ -279,9 +284,10 @@ def write_embeddings(path, embeddings, vocab):
             if len(word) != len(word.encode()):
                 continue
             vector = ' '.join([str(i) for i in embedding.tolist()])
-            f.write(f'{word} {vector}\n')
+            f.write('%s %s\n' % (word, vector))
 
-write_embeddings('.vector_cache/1-6M-my-train-embedding-200d.txt', 
+
+write_embeddings('.vector_cache/1-6M-my-train-embedding-200d-v2.txt', 
                  model.embedding.weight.data, 
                  TEXT.vocab)
 

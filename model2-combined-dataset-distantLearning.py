@@ -189,7 +189,7 @@ _, test_target_data = data.TabularDataset.splits(
 
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-custom_embeddings = vocab.Vectors(name = '.vector_cache/1-6M-my-train-embedding-200d.txt',
+custom_embeddings = vocab.Vectors(name = '.vector_cache/1-6M-my-train-embedding-200d-fixed.txt',
                                   cache = '.vector_cache/',
                                   unk_init = torch.Tensor.normal_)
 TEXT.build_vocab(train_data, max_size=25000, vectors=custom_embeddings)
@@ -231,6 +231,8 @@ criterion = criterion.to(device)
 N_EPOCHS = 20
 best_valid_loss = float('inf')
 
+model_save_dir = 'model2-combined-dataset-distantLearning-model.pt'
+
 print('start')
 print(vars(train_data.examples[0]))
 
@@ -259,7 +261,7 @@ for epoch in range(N_EPOCHS):
     
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
-        torch.save(model.state_dict(), 'model2-combined-dataset-model.pt')
+        torch.save(model.state_dict(), model_save_dir)
 
     if epoch == N_EPOCHS / 2:
         print('Unfreeze embeddings')
@@ -271,7 +273,9 @@ for epoch in range(N_EPOCHS):
     print('\tTrain Loss: %.3f | Train Acc: %.2f%%' % (train_loss, train_acc*100))
     print('\t Val. Loss: %.3f |  Val. Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % (valid_loss, valid_acc*100, f1_macro, f1_weighted))
 
-model.load_state_dict(torch.load('model2-combined-dataset-model.pt'))
+import os
+if os.path.exists(model_save_dir):
+    model.load_state_dict(torch.load(model_save_dir))
 
 test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_non_target_iterator, criterion)
 print('NON_TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
