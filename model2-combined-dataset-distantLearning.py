@@ -3,6 +3,7 @@
 import torch
 from torchtext import data
 from torchtext import datasets
+import torchtext.vocab as vocab
 import random
 import torch.nn as nn
 import torch.optim as optim
@@ -165,34 +166,47 @@ torch.backends.cudnn.deterministic = True
 TEXT = data.Field()
 LABEL = data.LabelField()
 
-fields = {'post': ('text', TEXT), 'label': ('label', LABEL)}
+fields = {'post': ('text', TEXT), 'sentiment': ('label', LABEL)}
 
-train_data, _ = data.TabularDataset.splits(
-                            path = 'my_data_v2',
-                            train = 'data.json',
-                            test= 'fake.json',
+train_path = 'combined_train_set.json'
+test_non_target_path = 'non_target_test.json'
+test_target_path = 'target_test.json'
+
+train_data, test_non_target_data = data.TabularDataset.splits(
+                            path = 'my_data_v4',
+                            train = train_path,
+                            test= test_non_target_path,
+                            format = 'json',
+                            fields = fields
+)
+_, test_target_data = data.TabularDataset.splits(
+                            path = 'my_data_v4',
+                            train = train_path,
+                            test = test_target_path,
                             format = 'json',
                             fields = fields
 )
 
-train_data, test_data = train_data.split(random_state=random.seed(SEED))
 train_data, valid_data = train_data.split(random_state=random.seed(SEED))
 
-TEXT.build_vocab(train_data, vectors="glove.twitter.27B.200d", unk_init=torch.Tensor.normal_)
+custom_embeddings = vocab.Vectors(name = '.vector_cache/1-6M-my-train-embedding-200d.txt',
+                                  cache = '.vector_cache/',
+                                  unk_init = torch.Tensor.normal_)
+TEXT.build_vocab(train_data, max_size=25000, vectors=custom_embeddings)
 LABEL.build_vocab(train_data)
 
 BATCH_SIZE = 64
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
-    (train_data, valid_data, test_data), sort_key=lambda x: len(x.text),
+train_iterator, valid_iterator, test_non_target_iterator, test_target_iterator = data.BucketIterator.splits(
+    (train_data, valid_data, test_non_target_data, test_target_data), sort_key=lambda x: len(x.text),
     batch_size=BATCH_SIZE,
     device=device)
 
 INPUT_DIM = len(TEXT.vocab)
 EMBEDDING_DIM = 200
 HIDDEN_DIM = 300 # !!! change -> 256
-OUTPUT_DIM = 2 # !!! change -> 3
+OUTPUT_DIM = 3 # !!! change -> 3
 N_LAYERS = 1 # !!! change -> 2
 BIDIRECTIONAL = True
 DROPOUT = 0.5
@@ -214,7 +228,7 @@ criterion = nn.CrossEntropyLoss()
 model = model.to(device)
 criterion = criterion.to(device)
 
-N_EPOCHS = 25
+N_EPOCHS = 20
 best_valid_loss = float('inf')
 
 print('start')
@@ -228,8 +242,8 @@ print(TEXT.vocab.itos[:10])
 print(LABEL.vocab.freqs.most_common(20))
 print(LABEL.vocab.stoi)
 
-print("train_data %d, valid_data %d, test_data %d" % 
-    (len(train_data), len(valid_data), len(test_data)))
+print("train_data %d, valid_data %d, test_non_target_data %d, test_target_data %d" % 
+    (len(train_data), len(valid_data), len(test_non_target_data), len(test_target_data)))
 
 
 for epoch in range(N_EPOCHS):
@@ -245,9 +259,9 @@ for epoch in range(N_EPOCHS):
     
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
-        torch.save(model.state_dict(), 'model2-save-1-6M-embeddings-model.pt')
+        torch.save(model.state_dict(), 'model2-combined-dataset-model.pt')
 
-    if epoch == 10:
+    if epoch == N_EPOCHS / 2:
         print('Unfreeze embeddings')
         model.embedding.weight.requires_grad = True
         optimizer = optim.Adam(model.parameters())
@@ -257,63 +271,20 @@ for epoch in range(N_EPOCHS):
     print('\tTrain Loss: %.3f | Train Acc: %.2f%%' % (train_loss, train_acc*100))
     print('\t Val. Loss: %.3f |  Val. Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % (valid_loss, valid_acc*100, f1_macro, f1_weighted))
 
-model.load_state_dict(torch.load('model2-save-1-6M-embeddings-model.pt'))
+model.load_state_dict(torch.load('model2-combined-dataset-model.pt'))
 
-test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_iterator, criterion)
-print('Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
-    (test_loss, test_acc*100, f1_macro, f1_weighted))
+test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_non_target_iterator, criterion)
+print('NON_TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
+    (len(test_non_target_data), test_loss, test_acc*100, f1_macro, f1_weighted))
+
+test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_target_iterator, criterion)
+print('TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
+    (len(test_target_data), test_loss, test_acc*100, f1_macro, f1_weighted))
 
 print(predict_sentiment("This film is terrible"))
 print(predict_sentiment("This film is great"))
+print(predict_sentiment("my_target_wrapper Obama my_target_wrapper is great, but Trump is awful"))
+print(predict_sentiment("my_target_wrapper Obama my_target_wrapper is good, but Trump is bad"))
 
-
-
-from tqdm import tqdm
-
-def write_embeddings(path, embeddings, vocab):
-    
-    with open(path, 'w') as f:
-        for i, embedding in enumerate(tqdm(embeddings)):
-            word = vocab.itos[i]
-            #skip words with unicode symbols
-            if len(word) != len(word.encode()):
-                continue
-            vector = ' '.join([str(i) for i in embedding.tolist()])
-            f.write(f'{word} {vector}\n')
-
-write_embeddings('.vector_cache/1-6M-my-train-embedding-200d.txt', 
-                 model.embedding.weight.data, 
-                 TEXT.vocab)
-
-
-
-# print(len(TEXT.vocab.stoi))
-# print(len(TEXT.vocab.itos))
-# print(TEXT.vocab.stoi)
-# print(TEXT.vocab.itos)
-# print(TEXT.vocab.freqs.most_common(40))
-
-# print(len(TEXT.vocab.vectors))
-# print(TEXT.vocab.vectors[:10])
-# print(TEXT.vocab.itos[:10])
-# print(len(model.embedding.weight.data))
-
-# with open(fname_out, 'w') as outfile:  
-#     whole_str = ''
-
-#     for i in range(len(TEXT.vocab.itos)):
-#         token = TEXT.vocab.itos[i]
-
-#         weights = model.embedding.weight.data[TEXT.vocab.stoi[token]]
-#         str_weights = token + ' '
-#         for w in weights:
-#             str_weights +=  ('%.5f ' % w.item())
-#         str_weights += '\n'
-
-#         whole_str += str_weights
-
-#     outfile.write(whole_str)
-
-
-# 25000 change to no-limit
-# small_data to data.json
+print(predict_sentiment("Obama is great, but my_target_wrapper Trump my_target_wrapper is awful"))
+print(predict_sentiment("Obama is good, but my_target_wrapper Trump my_target_wrapper is bad"))
