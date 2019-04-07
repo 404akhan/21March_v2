@@ -145,27 +145,25 @@ def filter(token):
     return token.lower()
 
 
-def predict_sentiment(sentences, model, stoi_dict, label_itos):
+def prepare_sentence(sentence, target, max_len):
+    
+
+def predict_sentiment(sentence, model, stoi_dict, label_itos):
     # TODO 1: make batch
     # TODO 2: if text has several sentences, count those who contain word, average over those or choose first one (depend on data)
-    
-    max_len = max([len(sent) for sent in sentences])
-    indexed_all, tokenized_all = [], []
-    for sent in sentences:
-        tokenized = [filter(tok.text) for tok in nlp.tokenizer(sent)]
-        indexed = [stoi_dict[t] if t in stoi_dict else stoi_dict['<unk>'] for t in tokenized] + (max_len - len(tokenized)) * [stoi_dict['<pad>']]
-        tokenized_all.append(tokenized)
-        indexed_all.append(indexed)
-    # print(tokenized)
-    # print(indexed)
-    tensor = torch.LongTensor(indexed_all).to(device)
-    tensor = tensor.transpose(0, 1)
+
+    tokenized = [filter(tok.text) for tok in nlp.tokenizer(sentence)]
+    indexed = [stoi_dict[t] for t in tokenized]
+    print(tokenized)
+    print(indexed)
+    tensor = torch.LongTensor(indexed).to(device)
+    tensor = tensor.unsqueeze(1)
     preds = model(tensor)
     max_preds = preds.argmax(dim=1) 
-    sentiment = label_itos[max_preds] # ????
+    sentiment = label_itos[max_preds.item()]
 
-    probs = nn.functional.softmax(preds, dim=1).tolist()
-    return sentences, sentiment, probs, tokenized_all, indexed_all
+    probs = nn.functional.softmax(preds, dim=1)[0].tolist()
+    return sentence, sentiment, probs
 
 
 def load_obj(name ):
@@ -199,11 +197,18 @@ else:
 # print('TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
 #     (len(test_target_data), test_loss, test_acc*100, f1_macro, f1_weighted))
 
+model.eval()
+
 print(predict_sentiment("This film is terrible", model, stoi_dict, label_itos))
+print('\n')
+print(predict_sentiment("my_target_wrapper This film my_target_wrapper is terrible", model, stoi_dict, label_itos))
+print('\n')
 print(predict_sentiment('my_target_wrapper Trump my_target_wrapper is bad!!', model, stoi_dict, label_itos))
+print('\n')
 
 
 ##### Andrew's doc prediction
+"""
 model.eval()
 
 import pickle 
@@ -242,4 +247,5 @@ new_arr.append(new_dict)
 
 with open('data-ANDREW-classified.json', 'w') as outfile:
     json.dump(new_arr, outfile)
+"""
 ##### END
