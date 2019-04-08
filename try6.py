@@ -47,9 +47,9 @@ class RNN(nn.Module):
 
 def filter(token):
     if token[0] == '@':
-        return '<at_@>'
+        return 'atakhansspecialtoken'
     if token[:4] == 'http':
-        return '<http>'
+        return 'httpakhansspecialtoken'
     return token.lower()
 
 
@@ -57,10 +57,16 @@ def prepare_sentence(text, target_arr):
 	# returns only the first sentence where target occured
 	global total_cases, counter_bad_case
 
-	text = text.replace('\n', ' ')
+	# most probably will not need this
+	text = " ".join(text.split())
 	text = text.replace('](https:', '] (https:')
+	text = text.replace('](http:', '] (http:')
+	text = text.replace('\u2019', "'")
+	text = text.replace('&amp;', "&")
+	# end
 	arr = nltk_tokenize_sentence.sent_tokenize(text)
 	target_arr = [word.lower() for word in target_arr]
+	tokenized_all = []
 
 	for item in arr:
 		target_join = ' '.join(target_arr)
@@ -75,15 +81,18 @@ def prepare_sentence(text, target_arr):
 			tokenized = [filter(tok.text) for tok in nlp.tokenizer(sentence)]
 
 			total_cases += 1
-			return tokenized
+			tokenized_all += tokenized
+			
+	if len(tokenized_all) != 0:
+		return tokenized_all
 
 	# BAD CASE, SHOULDN'T HAPPEN
 	counter_bad_case += 1
 	tokenized = [filter(tok.text) for tok in nlp.tokenizer(arr[0])]
-	# print('BAD CASE')
-	# print(arr)
-	# print(tokenized)
-	# print(target_arr)
+	print('\n\n\nBAD CASE')
+	print(arr)
+	print(tokenized)
+	print(target_arr)
 
 	return tokenized
 
@@ -183,16 +192,18 @@ print('ANDREWS DATA')
 import pickle 
 import json 
 
-with open('data-ANDREW.json') as f:
+with open('data-andrew-v3-pretty.json') as f:
     data = json.load(f)
 
 texts = []
 target_arrs = []
+old_sentiments = []
 arr_dict = []
 
 for i, item in enumerate(data):
-	texts.append(item['body'])
+	texts.append(item['processed_body'])
 	target_arrs.append(item['name'])
+	old_sentiments.append(item['sentiment'])
 
 	if i % 64 == 63:
 		texts, sentiments, probs, tokenized_all, indexed_all = \
@@ -202,6 +213,7 @@ for i, item in enumerate(data):
 			arr_dict.append({
 				'body': texts[j], 
 				'target_arr': target_arrs[j],
+				'old_sentiment': old_sentiments[j],
 				'NEW_predicted_sentiment': sentiments[j], 
 				'NEW_probs': [num.item() for num in probs[j]], 
 				'NEW_tokenized': ' '.join(tokenized_all[j]), 
@@ -209,11 +221,12 @@ for i, item in enumerate(data):
 			})
 		texts = []
 		target_arrs = []
+		old_sentiments = []
 
 		print(i)
 
 
-with open('data-ANDREW-classified-v2.json', 'w') as outfile:
+with open('data-ANDREW-classified-v3.json', 'w') as outfile:
     json.dump(arr_dict, outfile)
 
 print(counter_bad_case)
