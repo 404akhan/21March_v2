@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 import spacy
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, recall_score
 import numpy as np 
 
 
@@ -66,7 +66,12 @@ def f1_scores(preds, y):
 
     f1_weighted = f1_score(preds, y, average='weighted')
 
-    return f1_macro, f1_weighted
+
+    recall_macro = recall_score(preds, y, average='macro')
+
+    recall_weighted = recall_score(preds, y, average='weighted')
+
+    return f1_macro, f1_weighted, recall_macro, recall_weighted
 
 
 def train(model, iterator, optimizer, criterion):
@@ -123,8 +128,8 @@ def evaluate(model, iterator, criterion):
             epoch_loss += loss.item()
             epoch_acc += acc.item()
 
-    f1_macro, f1_weighted = f1_scores(predictions_arr, labels_arr) 
-    return epoch_loss / len(iterator), epoch_acc / len(iterator), f1_macro, f1_weighted
+    f1_macro, f1_weighted, recall_macro, recall_weighted = f1_scores(predictions_arr, labels_arr) 
+    return epoch_loss / len(iterator), epoch_acc / len(iterator), f1_macro, f1_weighted, recall_macro, recall_weighted
 
 
 
@@ -253,7 +258,7 @@ for epoch in range(N_EPOCHS):
     start_time = time.time()
     
     train_loss, train_acc = train(model, train_iterator, optimizer, criterion)
-    valid_loss, valid_acc, f1_macro, f1_weighted = evaluate(model, valid_iterator, criterion)
+    valid_loss, valid_acc, f1_macro, f1_weighted, recall_macro, recall_weighted = evaluate(model, valid_iterator, criterion)
     
     end_time = time.time()
 
@@ -271,19 +276,20 @@ for epoch in range(N_EPOCHS):
     
     print('Epoch: %d | Epoch Time: %dm %ds' % (epoch+1, epoch_mins, epoch_secs))
     print('\tTrain Loss: %.3f | Train Acc: %.2f%%' % (train_loss, train_acc*100))
-    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % (valid_loss, valid_acc*100, f1_macro, f1_weighted))
+    print('\t Val. Loss: %.3f |  Val. Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f | Recall_macro: %.3f | Recall_weighted: %.3f' % \
+        (valid_loss, valid_acc*100, f1_macro, f1_weighted, recall_macro, recall_weighted))
 
 import os
 if os.path.exists(model_save_dir):
     model.load_state_dict(torch.load(model_save_dir))
 
-test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_non_target_iterator, criterion)
-print('NON_TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
-    (len(test_non_target_data), test_loss, test_acc*100, f1_macro, f1_weighted))
+test_loss, test_acc, f1_macro, f1_weighted, recall_macro, recall_weighted = evaluate(model, test_non_target_iterator, criterion)
+print('NON_TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f | Recall_macro: %.3f | Recall_weighted: %.3f' % 
+    (len(test_non_target_data), test_loss, test_acc*100, f1_macro, f1_weighted, recall_macro, recall_weighted))
 
-test_loss, test_acc, f1_macro, f1_weighted = evaluate(model, test_target_iterator, criterion)
-print('TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f' % 
-    (len(test_target_data), test_loss, test_acc*100, f1_macro, f1_weighted))
+test_loss, test_acc, f1_macro, f1_weighted, recall_macro, recall_weighted = evaluate(model, test_target_iterator, criterion)
+print('TARGET size(%d): Test Loss: %.3f | Test Acc: %.2f%% | F1_macro: %.3f | F1_weighted: %.3f | Recall_macro: %.3f | Recall_weighted: %.3f' % 
+    (len(test_target_data), test_loss, test_acc*100, f1_macro, f1_weighted, recall_macro, recall_weighted))
 
 print(predict_sentiment("This film is terrible"))
 print(predict_sentiment("This film is great"))
